@@ -14,16 +14,14 @@
 Для изменения/добавления сущности будет обращения к базе данных через SQLAlchemy
 # Архитектура
 ## Код
-### Класс Base
-наследник DeclarativeBase (sqlalchemy) - для работы с бд
 ### Class Person
-класс наследник Base - для работы с информацией о человеке
+класс наследник DeclarativeBase (sqlalchemy) - для работы с информацией о человеке
 
 Fields: columns db
 
 Methods: getters, setter, getAge, getPhoto???
 ### Class Connect 
-наследник Base - для работы со связями между Person
+наследник DeclarativeBase (sqlalchemy) - для работы со связями между Person
 ### Class view
 Класс реализующий графический интерфейс основной
 ### Class person_view
