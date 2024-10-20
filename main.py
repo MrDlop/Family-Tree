@@ -75,6 +75,7 @@ class TreeDialog(QDialog):
         self.buttonBox.rejected.connect(self.reject)
         self.layout.addWidget(self.buttonBox, 3, columns)
         self.setLayout(self.layout)
+        self.update()
 
 
 class PersonDialog(QDialog):
@@ -179,6 +180,13 @@ class EditPersonDialog(QDialog):
         data_of_birthday = QLineEdit(self.person.get_data_of_birthday())
         gender_0 = QLabel('Пол:')
         gender = QLineEdit(self.person.get_gender())
+        dead = QRadioButton()
+        dead_0 = QLabel("Дата смерти (on/off)")
+        data_of_dead_0 = QLabel('Дата смерти:')
+        if self.person.get_data_of_dead() is None:
+            data_of_dead = QLineEdit()
+        else:
+            data_of_dead = QLineEdit(self.person.get_data_of_dead())
         info_label = dict()
 
         idx = -1
@@ -190,7 +198,10 @@ class EditPersonDialog(QDialog):
         layout.addWidget(data_of_birthday_0, idx, 0)
         layout.addWidget(gender, idx := idx + 1, 1)
         layout.addWidget(gender_0, idx, 0)
-        # dead = QRadioButton()
+        layout.addWidget(dead, idx := idx + 1, 1)
+        layout.addWidget(dead_0, idx, 0)
+        layout.addWidget(data_of_dead, idx := idx + 1, 1)
+        layout.addWidget(data_of_dead_0, idx, 0)
         if self.person.get_dead():
             data_of_death_0 = QLabel('Дата смерти:')
             data_of_death = QLineEdit(self.person.get_data_of_dead())
@@ -205,16 +216,23 @@ class EditPersonDialog(QDialog):
             layout.addWidget(info_0, idx, 0)
         idx_family = -1
         label_1 = QLabel('Родственники')
-        layout.addWidget(label_1, idx_family := idx_family + 1, 2)
+        layout.addWidget(label_1, idx_family := idx_family + 1, 3)
         family = self.person.get_family()
         for i in family:
             label_0 = QPushButton(i)
             label_0.clicked.connect(self.clicked)
-            layout.addWidget(label_0, idx_family := idx_family + 1, 2)
-        editButton = QPushButton('Edit')
-        editButton.clicked.connect(self.edit)
-        layout.addWidget(editButton, max(idx, idx_family) + 1, 1)
-        layout.addWidget(self.buttonBox, max(idx, idx_family) + 1, 2)
+            layout.addWidget(label_0, idx_family := idx_family + 1, 3)
+        saveButton = QPushButton('Save')
+        saveButton.clicked.connect(self.save)
+        addMemberButton = QPushButton('Add relative')
+        addMemberButton.clicked.connect(self.addRelative)
+        addInfoButton = QPushButton('Add information')
+        addInfoButton.clicked.connect(self.addInformation)
+
+        layout.addWidget(addMemberButton, max(idx, idx_family) + 1, 3)
+        layout.addWidget(addInfoButton, max(idx, idx_family) + 1, 0)
+        layout.addWidget(saveButton, max(idx, idx_family) + 2, 1)
+        layout.addWidget(self.buttonBox, max(idx, idx_family) + 2, 2)
         self.setLayout(layout)
 
     def save(self):
@@ -225,45 +243,13 @@ class EditPersonDialog(QDialog):
         else:
             print("Cancel!")
 
+    def addRelative(self):
+        pass
 
-# all_person = dict()
-# tanay = Human()
-# tanay.gender = 'Женщина'
-# tanay.name = 'Татьяна Тимербаев'
-# tanay.data_of_birthday = '12.07.1982'
-# tanay.death = False
-# all_person[tanay.name] = tanay
-#
-# elvir = Human()
-# elvir.gender = 'Мужчина'
-# elvir.name = 'Эльвир Тимербаев'
-# elvir.data_of_birthday = '24.02.1982'
-# elvir.death = False
-# all_person[elvir.name] = elvir
-#
-# emil = Human()
-# emil.gender = 'Мужчина'
-# emil.name = 'Эмиль Тимербаев'
-# emil.data_of_birthday = '11.12.2006'
-# emil.death = False
-# emil.other_information = {'learn': 'MIPT'}
-# all_person[emil.name] = emil
-#
-# alina = Human()
-# alina.gender = 'Девушка'
-# alina.name = 'Алина Гарифуллина'
-# alina.data_of_birthday = '02.02.2007'
-# alina.death = False
-# alina.other_information = {'learn': 'MIPT'}
-# all_person[alina.name] = alina
-#
-# tanay.family['child_0'] = emil
-# tanay.family['spouse'] = elvir
-# elvir.family['child_1'] = emil
-# elvir.family['spouse'] = tanay
-# emil.family['love'] = alina
-# emil.family['mother'] = tanay
-# emil.family['father'] = elvir
+    def addInformation(self):
+        pass
+
+
 root = Human(1)
 app = QApplication(sys.argv)
 window = MainWindow(root)

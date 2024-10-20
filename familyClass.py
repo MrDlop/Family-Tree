@@ -128,9 +128,9 @@ class Human:
         child_idx = 0
         for member in session.query(ConnectPerson).filter(ConnectPerson.id_first == self.person.id).all():
             if member.type == 'child':
-                family[member.type + "_" + str(child_idx)] = Human(member.second_id)
+                family[member.type + "_" + str(child_idx)] = Human(member.id_second)
             else:
-                family[member.type] = Human(member.second_id)
+                family[member.type] = Human(member.id_second)
         return family
 
 
