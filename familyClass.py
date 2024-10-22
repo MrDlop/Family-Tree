@@ -11,19 +11,25 @@ session = db_session.create_session()
 
 class Human:
     person: Person
+    flag: bool
 
-    def __init__(self, id: int) -> None:
+    def __init__(self, id: int | None = None) -> None:
         """
         :param id: id person in database
         """
-        self.person = session.query(Person).filter(Person.id == id).one()
+        self.flag = id is not None
+        if self.flag:
+            self.person = session.query(Person).filter(Person.id == id).one()
+        else:
+            self.person = Person()
 
     def update(self) -> None:
         """
         Function update data of person
         :return:
         """
-        self.person = session.query(Person).filter(Person.id == self.person.id).one()
+        if self.flag:
+            self.person = session.query(Person).filter(Person.id == self.person.id).one()
 
     def set_name(self, name: str) -> None:
         self.person.name = name
@@ -39,7 +45,7 @@ class Human:
     def get_data_of_birthday(self) -> str:
         return self.person.data_of_birthday
 
-    def set_data_of_dead(self, data_of_dead: str) -> None:
+    def set_data_of_dead(self, data_of_dead: str | None) -> None:
         self.person.data_of_dead = data_of_dead
         session.commit()
 
@@ -64,10 +70,14 @@ class Human:
     def __meta_info(self, meta_info: dict[str, str]) -> str:
         return '#'.join([':'.join([i, meta_info[i]]) for i in meta_info])
 
-    def set_info(self, info: list[str, str]) -> None:
+    def add_info(self, info: list[str, str]) -> None:
         meta_info = self.get_info()
         meta_info[info[0]] = info[1]
         self.person.info += self.__meta_info(meta_info)
+        session.commit()
+
+    def set_info(self, info: dict[str, str]) -> None:
+        self.person.info = self.__meta_info(info)
         session.commit()
 
     def del_info(self, info_tag: str) -> None:
@@ -133,34 +143,12 @@ class Human:
                 family[member.type] = Human(member.id_second)
         return family
 
+    def get_all_humans(self) -> list[(int, str)]:
+        list_humans = list()
+        for i in session.query(Person).all():
+            list_humans.append((i.id, i.name))
+        return list_humans
+
 
 if __name__ == '__main__':
-    person1 = Person()
-    person1.name = "Тимербаев Эмиль"
-    person1.data_of_birthday = "11.12.2006"
-    person1.gender = "Муж"
-    session.add(person1)
-
-    person2 = Person()
-    person2.name = "Тимербаев Эльвир"
-    person2.data_of_birthday = "24.02.1982"
-    person2.gender = "Муж"
-    session.add(person2)
-
-    person3 = Person()
-    person3.name = "Тимербаева Татьяна"
-    person3.data_of_birthday = "12.07.1982"
-    person3.gender = "Жен"
-    session.add(person3)
-
-    person4 = Person()
-    person4.name = "Тимербаева Элина"
-    person4.data_of_birthday = "08.04.2002"
-    person4.gender = "Жен"
-    session.add(person4)
-
-    person5 = Person()
-    person5.name = "Тимербаев Роман"
-    person5.data_of_birthday = "18.05.2013"
-    person5.gender = "Муж"
-    session.add(person5)
+    Human(0)
