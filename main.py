@@ -3,6 +3,7 @@
 import sys
 from typing import Dict
 
+from PyQt5 import sip
 from PyQt5.QtWidgets import *
 from PyQt5.QtWidgets import QLineEdit, QRadioButton, QLabel, QGridLayout
 
@@ -29,16 +30,19 @@ class TreeDialog(QDialog):
 
     def __init__(self, person_root: Human, parent: QDialog = None) -> None:
         super().__init__(parent)
+        self.parent = parent
+        self.layout = QGridLayout(self)
         self.person_root = person_root
-        self.__render()
+        self.render_()
 
     def start(self) -> None:
         if self.sender().objectName() == 'self':
             dlg = PersonDialog(self.person_root, self)
-            dlg.exec()
+            if not dlg.exec():
+                self.render_(True)
         else:
             self.person_root = self.person_root.get_family()[self.sender().objectName()]
-            self.__render()
+            self.render_(True)
 
     def __addMember(self, name: str, obj_member: Human, pos_x: int, pos_y: int) -> None:
         but_member = QPushButton(obj_member.get_name())
@@ -47,12 +51,13 @@ class TreeDialog(QDialog):
         self.layout.addWidget(but_member, pos_x, pos_y)
 
     def __add_human(self):
-        dlg = EditPersonDialog(None, self)
+        dlg = EditPersonDialog(None, self, self)
         dlg.exec()
 
-    def __render(self) -> None:
-        self.layout = QGridLayout()
-
+    def render_(self, flag=False) -> None:
+        if flag:
+            for i in reversed(range(self.layout.count())):
+                self.layout.itemAt(i).widget().deleteLater()
         self.setWindowTitle(self.person_root.get_name())
 
         QBtn = QDialogButtonBox.Cancel
@@ -87,7 +92,6 @@ class TreeDialog(QDialog):
         self.buttonBox.rejected.connect(self.reject)
         self.layout.addWidget(self.buttonBox, 3, columns + 1)
         self.layout.addWidget(add_human_button, 3, columns)
-        self.setLayout(self.layout)
         self.update()
 
 
@@ -96,28 +100,30 @@ class PersonDialog(QDialog):
 
     def __init__(self, person: Human, parent: QDialog = None) -> None:
         super().__init__(parent)
-
+        self.parent = parent
         person.update()
         self.person = person
 
+        self.layout = QGridLayout(self)
         self.setWindowTitle(person.get_name())
-        self.__render()
+        self.render_()
 
     def edit(self):
-        dlg = EditPersonDialog(self.person, self)
+        dlg = EditPersonDialog(self.person, self, self.parent)
         if not dlg.exec():
             self.person.update()
-            self.__render()
-            self.update()
+            self.render_(True)
 
-    def __render(self):
+    def render_(self, flag=False):
+        if flag:
+            for i in reversed(range(self.layout.count())):
+                self.layout.itemAt(i).widget().deleteLater()
         QBtn = QDialogButtonBox.Cancel
 
         self.buttonBox = QDialogButtonBox(QBtn)
         self.buttonBox.accepted.connect(self.accept)
         self.buttonBox.rejected.connect(self.reject)
 
-        layout = QGridLayout()
         name_0 = QLabel('Имя:')
         name = QLabel(self.person.get_name())
         data_of_birthday_0 = QLabel('Дата рождения:')
@@ -128,38 +134,38 @@ class PersonDialog(QDialog):
 
         idx = -1
         label_2 = QLabel('Информация')
-        layout.addWidget(label_2, idx := idx + 1, 0)
-        layout.addWidget(name, idx := idx + 1, 1)
-        layout.addWidget(name_0, idx, 0)
-        layout.addWidget(data_of_birthday, idx := idx + 1, 1)
-        layout.addWidget(data_of_birthday_0, idx, 0)
-        layout.addWidget(gender, idx := idx + 1, 1)
-        layout.addWidget(gender_0, idx, 0)
+        self.layout.addWidget(label_2, idx := idx + 1, 0)
+        self.layout.addWidget(name, idx := idx + 1, 1)
+        self.layout.addWidget(name_0, idx, 0)
+        self.layout.addWidget(data_of_birthday, idx := idx + 1, 1)
+        self.layout.addWidget(data_of_birthday_0, idx, 0)
+        self.layout.addWidget(gender, idx := idx + 1, 1)
+        self.layout.addWidget(gender_0, idx, 0)
         if self.person.get_dead():
             data_of_death_0 = QLabel('Дата смерти:')
             data_of_death = QLabel(self.person.get_data_of_dead())
-            layout.addWidget(data_of_death, idx := idx + 1, 1)
-            layout.addWidget(data_of_death_0, idx, 0)
+            self.layout.addWidget(data_of_death, idx := idx + 1, 1)
+            self.layout.addWidget(data_of_death_0, idx, 0)
         other_information = self.person.get_info()
         for i in other_information:
             info = QLabel(other_information[i])
             info_0 = QLabel(i)
             info_label[i] = info
-            layout.addWidget(info, idx := idx + 1, 1)
-            layout.addWidget(info_0, idx, 0)
+            self.layout.addWidget(info, idx := idx + 1, 1)
+            self.layout.addWidget(info_0, idx, 0)
         idx_family = -1
         label_1 = QLabel('Родственники')
-        layout.addWidget(label_1, idx_family := idx_family + 1, 2)
+        self.layout.addWidget(label_1, idx_family := idx_family + 1, 2)
         family = self.person.get_family()
         for i in family:
             label_0 = QPushButton(i)
             label_0.clicked.connect(self.clicked)
-            layout.addWidget(label_0, idx_family := idx_family + 1, 2)
+            self.layout.addWidget(label_0, idx_family := idx_family + 1, 2)
         editButton = QPushButton('Edit')
         editButton.clicked.connect(self.edit)
-        layout.addWidget(editButton, max(idx, idx_family) + 1, 1)
-        layout.addWidget(self.buttonBox, max(idx, idx_family) + 1, 2)
-        self.setLayout(layout)
+        self.layout.addWidget(editButton, max(idx, idx_family) + 1, 1)
+        self.layout.addWidget(self.buttonBox, max(idx, idx_family) + 1, 2)
+        self.update()
 
     def clicked(self):
         a = self.sender()
@@ -176,13 +182,17 @@ class EditPersonDialog(QDialog):
     data_of_birthday: QLineEdit | QLineEdit
     name: QLineEdit
     person: Human
-    list_humans: list[(int, str)]
+    list_humans: list[Human]
+    list_childs: list[QComboBox] = list()
     information_unique_key: str = "0"
+    childs: int = 0
     idx: int = -1
     idx_family: int = -1
 
-    def __init__(self, person: Human | None, parent=None):
+    def __init__(self, person: Human | None, parent=None, tree_parent: TreeDialog = None):
         super().__init__(parent)
+        self.parent = parent
+        self.tree_parent = tree_parent
 
         if person is not None:
             person.update()
@@ -191,7 +201,7 @@ class EditPersonDialog(QDialog):
             self.person = Human()
 
         self.list_humans = self.person.get_all_humans()
-        self.setWindowTitle(self.person.get_name())
+        self.setWindowTitle((self.person.get_name() if self.person.get_name() is not None else "New person"))
         self.render_()
 
     def render_(self):
@@ -251,10 +261,54 @@ class EditPersonDialog(QDialog):
         idx_family = -1
         label_1 = QLabel('Родственники')
         self.label.addWidget(label_1, idx_family := idx_family + 1, 3)
+
         family = self.person.get_family()
+        self.name_list_humans = [i.get_name() for i in self.list_humans] + [""]
+
+        label_mother = QLabel('Мать')
+        self.cb_mother = QComboBox(self)
+        self.cb_mother.setGeometry(200, 150, 120, 30)
+        self.cb_mother.addItems(self.name_list_humans)
+        if 'mother' in family.keys():
+            self.cb_mother.setCurrentIndex(self.list_humans.index(family['mother']))
+        else:
+            self.cb_mother.setCurrentIndex(len(self.list_humans))
+        self.label.addWidget(label_mother, idx_family := idx_family + 1, 3)
+        self.label.addWidget(self.cb_mother, idx_family, 4)
+
+        label_father = QLabel('Отец')
+        self.cb_father = QComboBox(self)
+        self.cb_father.setGeometry(200, 150, 120, 30)
+        self.cb_father.addItems(self.name_list_humans)
+        if 'father' in family.keys():
+            self.cb_father.setCurrentIndex(self.list_humans.index(family['father']))
+        else:
+            self.cb_father.setCurrentIndex(len(self.list_humans))
+        self.label.addWidget(label_father, idx_family := idx_family + 1, 3)
+        self.label.addWidget(self.cb_father, idx_family, 4)
+
+        label_spouse = QLabel('Супруг(-а)')
+        self.cb_spouse = QComboBox(self)
+        self.cb_spouse.setGeometry(200, 150, 120, 30)
+        self.cb_spouse.addItems(self.name_list_humans)
+        if 'spouse' in family.keys():
+            self.cb_spouse.setCurrentIndex(self.list_humans.index(family['spouse']))
+        else:
+            self.cb_spouse.setCurrentIndex(len(self.list_humans))
+        self.label.addWidget(label_spouse, idx_family := idx_family + 1, 3)
+        self.label.addWidget(self.cb_spouse, idx_family, 4)
+
         for i in family:
-            label_0 = QPushButton(i)
-            self.label.addWidget(label_0, idx_family := idx_family + 1, 3)
+            if 'child' in i:
+                label_child = QLabel('Ребёнок')
+                cb_child = QComboBox(self)
+                cb_child.setObjectName(i)
+                cb_child.setGeometry(200, 150, 120, 30)
+                cb_child.addItems(self.name_list_humans)
+                cb_child.setCurrentIndex(self.list_humans.index(family[i]))
+                self.label.addWidget(label_child, idx_family := idx_family + 1, 3)
+                self.label.addWidget(cb_child, idx_family, 4)
+                self.childs += 1
 
         self.saveButton = QPushButton('Save')
         self.saveButton.clicked.connect(self.save)
@@ -266,7 +320,7 @@ class EditPersonDialog(QDialog):
         self.addInfoButton.clicked.connect(self.addInformation)
 
         self.label.addWidget(self.addChildButton, max(idx, idx_family) + 1, 3)
-        self.label.addWidget(self.addSpouseButton, max(idx, idx_family) + 1, 4)
+        # self.label.addWidget(self.addSpouseButton, max(idx, idx_family) + 1, 4)
         self.label.addWidget(self.addInfoButton, max(idx, idx_family) + 1, 0)
         self.label.addWidget(self.saveButton, max(idx, idx_family) + 2, 1)
         self.label.addWidget(self.buttonBox, max(idx, idx_family) + 2, 2)
@@ -275,11 +329,12 @@ class EditPersonDialog(QDialog):
         self.idx_family = idx_family
 
     def save(self):
+        self.list_humans += [None]
         self.person.set_name(self.name.text())
 
         self.person.set_gender(self.gender.text())
 
-        self.person.set_data_of_birthday(self.data_of_birthday)
+        self.person.set_data_of_birthday(self.data_of_birthday.text())
 
         if self.rb_dead.isChecked():
             self.person.set_data_of_dead(self.data_of_dead.text())
@@ -290,11 +345,34 @@ class EditPersonDialog(QDialog):
         for i in self.information:
             info[self.information[i][0].text()] = self.information[i][1].text()
         self.person.set_info(info)
+        self.person.update()
+        self.person.change_member_connection(self.list_humans[self.cb_mother.currentIndex()], 'mother')
+        self.person.change_member_connection(self.list_humans[self.cb_father.currentIndex()], 'father')
+        self.person.change_member_connection(self.list_humans[self.cb_spouse.currentIndex()], 'spouse')
+        for i in self.list_childs:
+            self.person.change_member_connection(self.list_humans[i.currentIndex()], i.objectName())
 
+        self.person.update()
         self.close()
 
     def addChild(self):
-        pass
+        label_child = QLabel('Ребёнок')
+        cb_child = QComboBox(self)
+        cb_child.setObjectName(f"child_{self.childs}")
+        cb_child.setGeometry(200, 150, 120, 30)
+        cb_child.addItems(self.name_list_humans)
+        cb_child.setCurrentIndex(len(self.list_humans))
+        self.list_childs.append(cb_child)
+        self.idx_family += 1
+        self.label.addWidget(label_child, self.idx_family, 3)
+        self.label.addWidget(cb_child, self.idx_family, 4)
+        self.childs += 1
+
+        self.label.addWidget(self.addChildButton, max(self.idx, self.idx_family) + 1, 3)
+        # self.label.addWidget(self.addSpouseButton, max(self.idx, self.idx_family) + 1, 4)
+        self.label.addWidget(self.addInfoButton, max(self.idx, self.idx_family) + 1, 0)
+        self.label.addWidget(self.saveButton, max(self.idx, self.idx_family) + 2, 1)
+        self.label.addWidget(self.buttonBox, max(self.idx, self.idx_family) + 2, 2)
 
     def addSpouse(self):
         pass
@@ -323,7 +401,8 @@ class EditPersonDialog(QDialog):
         self.label.addWidget(info_button, self.idx, 2)
         self.label.addWidget(info_information, self.idx, 0)
 
-        self.label.addWidget(self.addMemberButton, max(self.idx, self.idx_family) + 1, 3)
+        self.label.addWidget(self.addChildButton, max(self.idx, self.idx_family) + 1, 3)
+        # self.label.addWidget(self.addSpouseButton, max(self.idx, self.idx_family) + 1, 4)
         self.label.addWidget(self.addInfoButton, max(self.idx, self.idx_family) + 1, 0)
         self.label.addWidget(self.saveButton, max(self.idx, self.idx_family) + 2, 1)
         self.label.addWidget(self.buttonBox, max(self.idx, self.idx_family) + 2, 2)

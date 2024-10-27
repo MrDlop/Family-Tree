@@ -30,6 +30,10 @@ class Human:
         """
         if self.flag:
             self.person = session.query(Person).filter(Person.id == self.person.id).one()
+        else:
+            self.flag = True
+            session.add(self.person)
+            session.commit()
 
     def set_name(self, name: str) -> None:
         self.person.name = name
@@ -37,6 +41,9 @@ class Human:
 
     def get_name(self):
         return self.person.name
+
+    def get_id(self) -> int:
+        return self.person.id
 
     def set_data_of_birthday(self, data_of_birthday: str) -> None:
         self.person.data_of_birthday = data_of_birthday
@@ -63,7 +70,7 @@ class Human:
         return self.person.gender
 
     def get_info(self) -> dict[str, str]:
-        if self.person.info is None:
+        if self.person.info == "" or self.person.info is None:
             return dict()
         return {i.split(':')[0]: i.split(':')[1] for i in self.person.info.split("#")}
 
@@ -93,6 +100,30 @@ class Human:
         member_con.id_second = member.person.id
         member_con.id_first = self.person.id
         session.add(member_con)
+        session.commit()
+
+    def change_member_connection(self, member: Self | None, type_con: str) -> None:
+        if self.person.id is not None:
+            member_con_0 = session.query(ConnectPerson).filter(
+                ConnectPerson.id_first == self.person.id).filter(ConnectPerson.type == type_con).all()
+            if len(member_con_0) == 0:
+                member_con_0 = None
+            else:
+                member_con_0 = member_con_0[0]
+        else:
+            member_con_0 = None
+        if member_con_0 is None:
+            if member is not None:
+                con = ConnectPerson()
+                con.id_first = self.person.id
+                con.id_second = member.person.id
+                con.type = type_con
+                session.add(con)
+        else:
+            if member is not None:
+                member_con_0.id_second = member.person.id
+            else:
+                session.delete(member_con_0)
         session.commit()
 
     def add_mother(self, mother: Self) -> None:
@@ -143,11 +174,14 @@ class Human:
                 family[member.type] = Human(member.id_second)
         return family
 
-    def get_all_humans(self) -> list[(int, str)]:
+    def get_all_humans(self) -> list[Self]:
         list_humans = list()
         for i in session.query(Person).all():
-            list_humans.append((i.id, i.name))
+            list_humans.append(Human(i.id))
         return list_humans
+
+    def __eq__(self, other):
+        return self.person.id == other.person.id
 
 
 if __name__ == '__main__':
