@@ -1,18 +1,28 @@
-# TODO: Добавить выпадающий список людей, изменение матери/отца, добавление/изменение детей супруг
-
 import sys
-from typing import Dict
 
-from PyQt5 import sip
 from PyQt5.QtWidgets import *
 from PyQt5.QtWidgets import QLineEdit, QRadioButton, QLabel, QGridLayout
 
-from familyClass import Human
+from sqlalchemy.exc import NoResultFound
+
+from family_class import Human
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, root):
+    root: Human
+
+    def __init__(self):
+        """
+        Initialization function (basic QT + create/connect to db)
+        """
         super().__init__()
+
+        try:
+            root = Human(1)
+        except NoResultFound:
+            root = Human()
+            root.person.id = 1
+            root.update()
 
         self.setWindowTitle("My App")
         self.root = root
@@ -21,46 +31,43 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(button)
 
     def button_clicked(self):
+        """
+        method for start main dialog
+        :return:
+        """
         dlg = TreeDialog(person_root=self.root, parent=self)
         dlg.exec()
 
 
 class TreeDialog(QDialog):
     person_root: Human
+    layout: QGridLayout
+    person_root: Human
+    button_box: QDialogButtonBox
 
     def __init__(self, person_root: Human, parent: QDialog = None) -> None:
+        """
+        Initialization function (basic QT)
+        :param person_root: root of the person tree
+        :param parent:
+        """
         super().__init__(parent)
-        self.parent = parent
         self.layout = QGridLayout(self)
         self.person_root = person_root
-        self.render_()
+        self.__render()
 
-    def start(self) -> None:
-        if self.sender().objectName() == 'self':
-            dlg = PersonDialog(self.person_root, self)
-            if not dlg.exec():
-                self.render_(True)
-        else:
-            self.person_root = self.person_root.get_family()[self.sender().objectName()]
-            self.render_(True)
-
-    def __addMember(self, name: str, obj_member: Human, pos_x: int, pos_y: int) -> None:
-        but_member = QPushButton(obj_member.get_name())
-        but_member.setObjectName(name)
-        but_member.clicked.connect(self.start)
-        self.layout.addWidget(but_member, pos_x, pos_y)
-
-    def __add_human(self):
-        dlg = EditPersonDialog(None, self, self)
-        dlg.exec()
-
-    def render_(self, flag=False) -> None:
-        if flag:
+    def __render(self, is_created: bool = False) -> None:
+        """
+        Update layout with current root
+        :param is_created: False if first creating and True is not single
+        :return:
+        """
+        if is_created:
             for i in reversed(range(self.layout.count())):
                 self.layout.itemAt(i).widget().deleteLater()
         self.setWindowTitle(self.person_root.get_name())
 
-        QBtn = QDialogButtonBox.Cancel
+        cancel_button = QDialogButtonBox.Cancel
         columns = 0
         family = self.person_root.get_family()
         for member in family:
@@ -70,57 +77,107 @@ class TreeDialog(QDialog):
         posR = columns // 2
 
         if 'mother' in family:
-            self.__addMember("mother", family["mother"], posR - 1, 0)
+            self.__add_member("mother", family["mother"], posR - 1, 0)
 
         if 'father' in family:
-            self.__addMember("father", family["father"], posR + 1, 0)
+            self.__add_member("father", family["father"], posR + 1, 0)
 
-        self.__addMember("self", self.person_root, posR, 1)
+        self.__add_member("self", self.person_root, posR, 1)
 
         if 'spouse' in family:
-            self.__addMember("spouse", family["spouse"], posR + 1, 1)
+            self.__add_member("spouse", family["spouse"], posR + 1, 1)
         idx = -1
         for member in family:
             if 'child' in member:
-                self.__addMember(member, family[member], idx := idx + 1, 2)
+                self.__add_member(member, family[member], idx := idx + 1, 2)
 
         add_human_button = QPushButton("Добавить человека")
         add_human_button.clicked.connect(self.__add_human)
 
-        self.buttonBox = QDialogButtonBox(QBtn)
-        self.buttonBox.accepted.connect(self.accept)
-        self.buttonBox.rejected.connect(self.reject)
-        self.layout.addWidget(self.buttonBox, 3, columns + 1)
+        self.button_box = QDialogButtonBox(cancel_button)
+        self.button_box.accepted.connect(self.accept)
+        self.button_box.rejected.connect(self.reject)
+        self.layout.addWidget(self.button_box, 3, columns + 1)
         self.layout.addWidget(add_human_button, 3, columns)
         self.update()
+
+    def start(self) -> None:
+        """
+        Move root or open information window
+        :return:
+        """
+        if self.sender().objectName() == 'self':
+            dlg = PersonDialog(self.person_root, self)
+            if not dlg.exec():
+                self.__render(True)
+        else:
+            self.person_root = self.person_root.get_family()[self.sender().objectName()]
+            self.__render(True)
+
+    def __add_member(self, name: str, obj_member: Human, pos_x: int, pos_y: int) -> None:
+        """
+        Method move the member to Grid
+        :param name:
+        :param obj_member:
+        :param pos_x:
+        :param pos_y:
+        :return:
+        """
+        but_member = QPushButton(obj_member.get_name())
+        but_member.setObjectName(name)
+        but_member.clicked.connect(self.start)
+        self.layout.addWidget(but_member, pos_x, pos_y)
+
+    def __add_human(self) -> None:
+        """
+        create dialog for create people
+        :return:
+        """
+        dlg = EditPersonDialog(None, self)
+        dlg.exec()
 
 
 class PersonDialog(QDialog):
     person: Human
+    layout: QGridLayout
+    buttonBox: QDialogButtonBox
 
     def __init__(self, person: Human, parent: QDialog = None) -> None:
+        """
+        Initialize the person dialog
+        :param person:
+        :param parent:
+        """
         super().__init__(parent)
-        self.parent = parent
         person.update()
         self.person = person
 
         self.layout = QGridLayout(self)
         self.setWindowTitle(person.get_name())
-        self.render_()
+        self.__render()
 
-    def edit(self):
-        dlg = EditPersonDialog(self.person, self, self.parent)
+    def edit(self) -> None:
+        """
+        Method starting edit person dialog
+        :return:
+        """
+        dlg = EditPersonDialog(self.person, self)
         if not dlg.exec():
             self.person.update()
-            self.render_(True)
+            self.__render(True)
 
-    def render_(self, flag=False):
-        if flag:
+    def __render(self, is_created: bool = False) -> None:
+        """
+        Method update person view
+        :param is_created: Is layout created
+        :return:
+        """
+        if is_created:
             for i in reversed(range(self.layout.count())):
                 self.layout.itemAt(i).widget().deleteLater()
-        QBtn = QDialogButtonBox.Cancel
+        button_cancel = QDialogButtonBox.Cancel
 
-        self.buttonBox = QDialogButtonBox(QBtn)
+        self.buttonBox = QDialogButtonBox(button_cancel)
         self.buttonBox.accepted.connect(self.accept)
         self.buttonBox.rejected.connect(self.reject)
 
@@ -167,9 +224,12 @@ class PersonDialog(QDialog):
         self.layout.addWidget(self.buttonBox, max(idx, idx_family) + 1, 2)
         self.update()
 
-    def clicked(self):
-        a = self.sender()
-        dlg = PersonDialog(self.person.get_family()[a.text()], self)
+    def clicked(self) -> None:
+        """
+        Button clicked (start new Person Dialog)
+        :return:
+        """
+        dlg = PersonDialog(self.person.get_family()[self.sender().text()], self)
         dlg.exec()
 
 
@@ -188,11 +248,19 @@ class EditPersonDialog(QDialog):
     childs: int = 0
     idx: int = -1
     idx_family: int = -1
+    button_box: QDialogButtonBox
+    save_button: QPushButton
+    add_child_button: QPushButton
+    add_spouse_button: QPushButton
+    add_info_button: QPushButton
 
-    def __init__(self, person: Human | None, parent=None, tree_parent: TreeDialog = None):
+    def __init__(self, person: Human | None, parent=None) -> None:
+        """
+        Initialize the edit person dialog
+        :param person:
+        :param parent:
+        """
         super().__init__(parent)
-        self.parent = parent
-        self.tree_parent = tree_parent
 
         if person is not None:
             person.update()
@@ -202,14 +270,18 @@ class EditPersonDialog(QDialog):
 
         self.list_humans = self.person.get_all_humans()
         self.setWindowTitle((self.person.get_name() if self.person.get_name() is not None else "New person"))
-        self.render_()
+        self.__render()
 
-    def render_(self):
+    def __render(self) -> None:
+        """
+        Render layout
+        :return:
+        """
         q_button_cancel = QDialogButtonBox.Cancel
 
-        self.buttonBox = QDialogButtonBox(q_button_cancel)
-        self.buttonBox.accepted.connect(self.accept)
-        self.buttonBox.rejected.connect(self.reject)
+        self.button_box = QDialogButtonBox(q_button_cancel)
+        self.button_box.accepted.connect(self.accept)
+        self.button_box.rejected.connect(self.reject)
 
         self.label = QGridLayout()
 
@@ -253,7 +325,7 @@ class EditPersonDialog(QDialog):
             info_button = QPushButton()
             info_button.setObjectName(i)
             info_button.setText('Удалить')
-            info_button.clicked.connect(self.deleteInfo)
+            info_button.clicked.connect(self.delete_info)
             self.label.addWidget(info_description, idx := idx + 1, 1)
             self.label.addWidget(info_button, idx, 2)
             self.label.addWidget(info_information, idx, 0)
@@ -310,25 +382,29 @@ class EditPersonDialog(QDialog):
                 self.label.addWidget(cb_child, idx_family, 4)
                 self.childs += 1
 
-        self.saveButton = QPushButton('Save')
-        self.saveButton.clicked.connect(self.save)
-        self.addChildButton = QPushButton('Добавить ребёнка')
-        self.addChildButton.clicked.connect(self.addChild)
-        self.addSpouseButton = QPushButton('Добавить супруга')
-        self.addSpouseButton.clicked.connect(self.addSpouse)
-        self.addInfoButton = QPushButton('Добавить информацию')
-        self.addInfoButton.clicked.connect(self.addInformation)
+        self.save_button = QPushButton('Save')
+        self.save_button.clicked.connect(self.save)
+        self.add_child_button = QPushButton('Добавить ребёнка')
+        self.add_child_button.clicked.connect(self.add_child)
+        self.add_spouse_button = QPushButton('Добавить супруга')
+        self.add_spouse_button.clicked.connect(self.add_spouse)
+        self.add_info_button = QPushButton('Добавить информацию')
+        self.add_info_button.clicked.connect(self.add_information)
 
-        self.label.addWidget(self.addChildButton, max(idx, idx_family) + 1, 3)
+        self.label.addWidget(self.add_child_button, max(idx, idx_family) + 1, 3)
         # self.label.addWidget(self.addSpouseButton, max(idx, idx_family) + 1, 4)
-        self.label.addWidget(self.addInfoButton, max(idx, idx_family) + 1, 0)
-        self.label.addWidget(self.saveButton, max(idx, idx_family) + 2, 1)
-        self.label.addWidget(self.buttonBox, max(idx, idx_family) + 2, 2)
+        self.label.addWidget(self.add_info_button, max(idx, idx_family) + 1, 0)
+        self.label.addWidget(self.save_button, max(idx, idx_family) + 2, 1)
+        self.label.addWidget(self.button_box, max(idx, idx_family) + 2, 2)
         self.setLayout(self.label)
         self.idx = idx
         self.idx_family = idx_family
 
-    def save(self):
+    def save(self) -> None:
+        """
+        Update database
+        :return:
+        """
         self.list_humans += [None]
         self.person.set_name(self.name.text())
 
@@ -355,7 +431,7 @@ class EditPersonDialog(QDialog):
         self.person.update()
         self.close()
 
-    def addChild(self):
+    def add_child(self) -> None:
         label_child = QLabel('Ребёнок')
         cb_child = QComboBox(self)
         cb_child.setObjectName(f"child_{self.childs}")
@@ -368,16 +444,20 @@ class EditPersonDialog(QDialog):
         self.label.addWidget(cb_child, self.idx_family, 4)
         self.childs += 1
 
-        self.label.addWidget(self.addChildButton, max(self.idx, self.idx_family) + 1, 3)
+        self.label.addWidget(self.add_child_button, max(self.idx, self.idx_family) + 1, 3)
         # self.label.addWidget(self.addSpouseButton, max(self.idx, self.idx_family) + 1, 4)
-        self.label.addWidget(self.addInfoButton, max(self.idx, self.idx_family) + 1, 0)
-        self.label.addWidget(self.saveButton, max(self.idx, self.idx_family) + 2, 1)
-        self.label.addWidget(self.buttonBox, max(self.idx, self.idx_family) + 2, 2)
+        self.label.addWidget(self.add_info_button, max(self.idx, self.idx_family) + 1, 0)
+        self.label.addWidget(self.save_button, max(self.idx, self.idx_family) + 2, 1)
+        self.label.addWidget(self.button_box, max(self.idx, self.idx_family) + 2, 2)
 
-    def addSpouse(self):
+    def add_spouse(self) -> None:
         pass
 
-    def deleteInfo(self):
+    def delete_info(self) -> None:
+        """
+        Delete information
+        :return:
+        """
         info_description, info_information = self.information[self.sender().objectName()]
         del self.information[self.sender().objectName()]
 
@@ -386,7 +466,11 @@ class EditPersonDialog(QDialog):
         self.sender().setText('Удалено')
         self.sender().setEnabled(False)
 
-    def addInformation(self):
+    def add_information(self) -> None:
+        """
+        Add new information
+        :return:
+        """
         info_description = QLineEdit()
         info_information = QLineEdit()
         while self.information_unique_key in self.information.keys():
@@ -395,21 +479,20 @@ class EditPersonDialog(QDialog):
         info_button = QPushButton()
         info_button.setObjectName(self.information_unique_key)
         info_button.setText('Удалить')
-        info_button.clicked.connect(self.deleteInfo)
+        info_button.clicked.connect(self.delete_info)
         self.idx += 1
         self.label.addWidget(info_description, self.idx, 1)
         self.label.addWidget(info_button, self.idx, 2)
         self.label.addWidget(info_information, self.idx, 0)
 
-        self.label.addWidget(self.addChildButton, max(self.idx, self.idx_family) + 1, 3)
+        self.label.addWidget(self.add_child_button, max(self.idx, self.idx_family) + 1, 3)
         # self.label.addWidget(self.addSpouseButton, max(self.idx, self.idx_family) + 1, 4)
-        self.label.addWidget(self.addInfoButton, max(self.idx, self.idx_family) + 1, 0)
-        self.label.addWidget(self.saveButton, max(self.idx, self.idx_family) + 2, 1)
-        self.label.addWidget(self.buttonBox, max(self.idx, self.idx_family) + 2, 2)
+        self.label.addWidget(self.add_info_button, max(self.idx, self.idx_family) + 1, 0)
+        self.label.addWidget(self.save_button, max(self.idx, self.idx_family) + 2, 1)
+        self.label.addWidget(self.button_box, max(self.idx, self.idx_family) + 2, 2)
 
 
-root = Human(1)
 app = QApplication(sys.argv)
-window = MainWindow(root)
+window = MainWindow()
 window.show()
 app.exec()
