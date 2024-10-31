@@ -1,2 +1,2 @@
-from . import person
-from . import connect_person
+from data import person
+from data import connect_person

@@ -67,7 +67,7 @@ Fields: columns db
 
 def get_family(self) -> dict[str, Self] - получение текущего дерева
 ### Class Connect 
-наследник DeclarativeBase (sqlalchemy) - для работы со связями между Person
+наследник DeclarativeBase (sqlalchemy) - для работы со связями между Person♦`
 ## Data base
 
 ### persons:

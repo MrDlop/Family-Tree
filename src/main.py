@@ -1,7 +1,8 @@
 import sys
 
-from PyQt5.QtWidgets import *
 from PyQt5.QtWidgets import QLineEdit, QRadioButton, QLabel, QGridLayout
+from PyQt5.QtWidgets import QMainWindow, QPushButton, QDialog
+from PyQt5.QtWidgets import QDialogButtonBox, QComboBox, QApplication
 
 from sqlalchemy.exc import NoResultFound
 

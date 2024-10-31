@@ -2,7 +2,7 @@ import datetime
 import sqlalchemy
 from sqlalchemy import orm
 
-from .db_session import SqlAlchemyBase
+from data.db_session import SqlAlchemyBase
 
 
 class Person(SqlAlchemyBase):
@@ -15,4 +15,3 @@ class Person(SqlAlchemyBase):
     info = sqlalchemy.Column(sqlalchemy.String, nullable=True)
     gender = sqlalchemy.Column(sqlalchemy.String, nullable=True)
     photo = sqlalchemy.Column(sqlalchemy.String)
-
