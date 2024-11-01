@@ -1,6 +1,8 @@
 import os
 import unittest
+from sys import path
 
+path.insert(1, '../tests')
 from family_class import *
 
 
