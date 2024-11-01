@@ -2,7 +2,7 @@ import os
 import unittest
 from sys import path
 
-path.insert(1, '../tests')
+path.insert(1, '../src')
 from family_class import *
 
 
