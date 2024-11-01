@@ -1,0 +1,10 @@
+Name                                                        Stmts   Miss  Cover
+-------------------------------------------------------------------------------
+D:\Programming\a\2\Family-Tree\src\data\__all_models.py         2      0   100%
+D:\Programming\a\2\Family-Tree\src\data\connect_person.py       7      0   100%
+D:\Programming\a\2\Family-Tree\src\data\db_session.py          18      2    89%
+D:\Programming\a\2\Family-Tree\src\data\person.py              11      0   100%
+D:\Programming\a\2\Family-Tree\src\family_class.py             99     10    90%
+test.py                                                        68      1    99%
+-------------------------------------------------------------------------------
+TOTAL                                                         205     13    94%
