@@ -131,7 +131,7 @@ class Human:
         """
         return '#'.join([':'.join([i, meta_info[i]]) for i in meta_info])
 
-    def add_info(self, info: list[str, str]) -> None:
+    def add_info(self, info: list[str]) -> None:
         """
         Setter
         :param info: ("type information", "text information")
