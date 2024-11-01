@@ -1,7 +1,6 @@
 from typing import NoReturn
 
 import sqlalchemy as sa
-import sqlalchemy.orm as orm
 from sqlalchemy.orm import Session
 import sqlalchemy.ext.declarative as dec
 
@@ -22,7 +21,7 @@ def global_init(db_file: str) -> NoReturn:
     conn_str = f'sqlite:///{db_file.strip()}?check_same_thread=False'
 
     engine = sa.create_engine(conn_str, echo=False)
-    __factory = orm.sessionmaker(bind=engine)
+    __factory = engine
 
     import data.__all_models
 
@@ -31,4 +30,4 @@ def global_init(db_file: str) -> NoReturn:
 
 def create_session() -> Session:
     global __factory
-    return __factory()
+    return Session(__factory)

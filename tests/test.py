@@ -1,16 +1,22 @@
 import os
 import unittest
-os.remove("db.bd")
-from family_class import Human
+
+from family_class import *
 
 
 class TestFamilyClass(unittest.TestCase):
     @classmethod
-    def setUpClass(self):
-        self.person = Human()
-        self.person.update()
-        self.person2 = Human()
-        self.person2.update()
+    def setUpClass(cls):
+        cls.person = Human()
+        cls.person.update()
+        cls.person2 = Human()
+        cls.person2.update()
+
+    @classmethod
+    def tearDownClass(cls):
+        session.close()
+        session.bind.dispose()
+        os.remove("db.bd")
 
     def test_set_name(self):
         self.assertEqual(self.person.get_name(), None)
