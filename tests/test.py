@@ -1,8 +1,5 @@
 import os
 import unittest
-
-from data.person import Person
-
 os.remove("db.bd")
 from family_class import Human
 
