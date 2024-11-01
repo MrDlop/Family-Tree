@@ -9,6 +9,10 @@ jobs:
   unittests:
     name: Unit tests
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: src
     steps:
       - uses: actions/checkout@v4
       - name: Set up python
