@@ -158,7 +158,7 @@ class Human:
         meta_info = self.get_info()
         if info_tag in meta_info:
             del meta_info[info_tag]
-        self.person.name = self.__meta_info(meta_info)
+        self.person.info = self.__meta_info(meta_info)
         session.commit()
 
     def change_member_connection(self, member: Self | None, type_con: str) -> None:
